@@ -236,3 +236,124 @@ def button_pressed(inp, pos, item_pos):
         add_to_order(inp, menu[current_tab][item_pos][2], current_tab)
 
 # end button_pressed
+
+def draw_order_box():
+    # Draw order textbox and frame
+    order_box_frame = tkinter.Frame(height = top_box_height-padding*4,
+                                    width = top_box_width-padding*4, bg='#dfdfdf')
+    order_box_frame.place(x = padding*2, y = padding*2)
+    
+    order_box = tkinter.Listbox(order_box_frame, font= (FONT[0],FONT[1]), bg='#dfdfdf', borderwidth = 0)
+    # place Listbox in top left quadrant
+    order_box.place(x = 0, y = 0,
+                    width = top_box_width-padding*4,
+                    height = top_box_height-padding*4)
+
+    # set up scrollbar
+    scrollbar = tkinter.Scrollbar(order_box, orient="vertical", command=order_box.yview) # Effect only the vertical scroll
+    scrollbar.pack(side="right", fill="y") # Put the scrollbar on the right of the listbox, fill along right
+    order_box.config(yscrollcommand=scrollbar.set) # Tell the orderbox that the scrollbar changed the y view
+    
+
+    # Print the title accross the Listbox
+    WIDTH = math.floor((top_box_width-padding*4)/10) # Width of text box in characters
+    order_box.insert(tkinter.END, "┌"+"─"*math.floor(WIDTH*2/3-1)+"┬"+"─"*math.floor(WIDTH/9-1)+"┬"+
+                    "─"*math.floor(WIDTH/9-1)+"┬"+"─"*math.floor(WIDTH/9-1)+"┐")
+    
+    order_box.insert(tkinter.END, "│Name"+" "*math.floor(WIDTH*2/3-5) +
+                                  "│Price"+" "*math.floor(WIDTH*1/9-6) +
+                                  "│Qty"+" "*math.floor(WIDTH*1/9-4) +
+                                  "│Total"+" "*math.floor(WIDTH*1/9-6) + "│")
+    
+    order_box.insert(tkinter.END, "├"+"─"*math.floor(WIDTH*2/3-1)+"┼"+"─"*math.floor(WIDTH/9-1)+"┼"+
+                    "─"*math.floor(WIDTH/9-1)+"┼"+"─"*math.floor(WIDTH/9-1)+"┤")
+    
+    order_box.insert(tkinter.END, "└"+"─"*math.floor(WIDTH*2/3-1)+"┴"+"─"*math.floor(WIDTH/9-1)+"┴"+
+                    "─"*math.floor(WIDTH/9-1)+"┴"+"─"*math.floor(WIDTH/9-1)+"┘")
+    return order_box
+
+# end draw_order_box
+
+
+def add_to_order(name, price, tab):
+    global discounts
+    global running_total
+    WIDTH = math.floor((top_box_width-padding*4)/10) # Width of text box in characters
+    found = False # Used to determin if the item is already in the list
+    x = 0 # Index value for loop
+    
+    if len(current_order) != 0:
+        while x < len(current_order) and found == False:
+            if name in current_order[x] and tab in current_order[x]: # Same item found
+                current_order[x][3] += 1 # Increase qty val by 1
+                new_total = int(current_order[x][3])*float(price) # price * qty
+                new_total = round(new_total,2)
+
+                new_total = add_zero(new_total)
+
+                current_order[x][4] = new_total # Replace the old total with the new value
+                order_box.delete(x+3) # Remove the line on the Listbox
+
+                # Update the deleted line
+                order_box.insert(x+3, "│"+tab+": "+name+" "*math.floor(WIDTH*2/3-len(tab)-len(name)-3) +
+                                      "│£"+price+" "*math.floor(WIDTH*1/9-len(price)-2) +
+                                      "│"+str(current_order[x][3])+" "*math.floor(WIDTH*1/9-len(str(current_order[x][3]))-1) +
+                                      "│£"+str(new_total)+" "*math.floor(WIDTH*1/9-len(str(new_total))-2) + "│")
+
+                # update discount value if needed
+                if x+1 in discount_pos:
+                    update_discount(x)
+
+                                               
+                found = True # Exit the loop
+            x += 1 # Increment the index
+    if len(whole_discount) > 0:
+        a = 1
+    else:
+        a = 0
+    if found == False: # If the above loop did not find the item or empty array
+        current_order.append([tab, name, price, 1, price]) # Add item to the current order array
+        order_box.insert(order_box.size()-1-a, "│"+tab+": "+name+" "*math.floor(WIDTH*2/3-len(tab)-len(name)-3) +
+                                      "│£"+price+" "*math.floor(WIDTH*1/9-len(price)-2) +
+                                      "│1"+" "*math.floor(WIDTH*1/9-2) +
+                                      "│£"+price+" "*math.floor(WIDTH*1/9-len(price)-2) + "│")
+    running_total = float(running_total)
+    running_total += float(price)
+    
+    if len(whole_discount) > 0: # If there is something in the whole_discount variable
+        update_discount_whole()
+        
+    update_labels()
+
+# end add_to_order
+
+        
+# Update the labels
+def update_labels():
+    global discounts
+    global running_total
+
+    running_total = round(float(running_total), 2)
+
+    ex_vat_val = running_total*(1-VAT)
+    ex_vat_val = round(ex_vat_val, 2)
+
+    discounts = float(discounts)
+    discounts = round(discounts, 2)
+
+    running_total = add_zero(running_total)
+
+    ex_vat_val = add_zero(ex_vat_val)
+
+    discounts = add_zero(discounts)
+
+    total = round(float(running_total)-float(discounts),2)
+
+    total = add_zero(total)
+
+    ex_vat_label.config(text="Excluding VAT:\n£"+str(ex_vat_val))
+    inc_vat_label.config(text="Including VAT @ "+str(VAT*100)+"%:\n£"+str(running_total))
+    offers_label.config(text="Offers and Discounts:\n£"+str(discounts))
+    total_price_label.config(text="Total cost of order:\n£"+str(total))
+
+# end update_labels
