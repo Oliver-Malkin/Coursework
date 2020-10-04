@@ -90,3 +90,149 @@ last_order = []
 #########################
 # End of initialization #
 #########################
+
+def draw_boxes():
+    
+    # The first two arguments set the start point x1, y1 in pixles of the
+    # rectangle. The next two arguments set the end point x2, y2 of the rectangle
+    order_total_box = canvas.create_rectangle(padding, padding,
+                                        top_box_width-padding,
+                                        top_box_height-padding,
+                                        width=box_width)
+
+    # This creates the order total box
+    price_total_box = canvas.create_rectangle(top_box_width+padding,
+                                        padding,
+                                        window.winfo_screenwidth()-padding,
+                                        top_box_height-padding,
+                                        width=box_width)
+
+    # This creates the tab box, using the same methods as above
+    tab_box = canvas.create_rectangle(padding,
+                                        top_box_height+padding,
+                                        bottom_box_width-padding,
+                                        window.winfo_screenheight()-padding,
+                                        width=box_width)
+
+    # This creates the command buttons box
+    command_box = canvas.create_rectangle(bottom_box_width+padding,
+                                          top_box_height+padding,
+                                          window.winfo_screenwidth()-padding,
+                                          window.winfo_screenheight()-padding,
+                                          width=box_width)
+
+# end draw_boxes
+
+    
+def draw_buttons(to_draw, pos): # to_draw is the array of buttons to be drawn
+    global tabs_frame
+
+    width_bound = ((0, bottom_box_width-padding*4))
+    height_bound = ((0, (window.winfo_screenheight()-top_box_height)-padding*4))
+
+    try:
+        tabs_frame.destroy() # Trys to destroy the frame
+    except: # Excepts any exeception
+        pass
+
+    # Draws the frame for the tabs, using the bounds set above
+    tabs_frame = tkinter.Frame(height = height_bound[1],
+                           width = width_bound[1])
+    tabs_frame.place(y = top_box_height+padding*2, x = padding*2)
+    
+    # Paramiters for the buttons height/width
+    button_height = 80        
+    button_width = 120
+
+    # Starting positions for the button to be placed within the frame
+    current_width = width_bound[0]
+    current_height = height_bound[0]
+
+    # Goes through each item in the array passed to the procedure
+    for i in range(len(to_draw)):
+        if pos == -1: # Tab button
+            b = tkinter.Button(tabs_frame,
+                           text = to_draw[i][0], # The text on the button is first part of the array
+                           command = lambda button_name = to_draw[i][0], x = i:
+                           button_pressed(button_name, x, -1), # When the button is pressed it calles a precedure
+                                                # button_pressed, and passes the name of the button
+                           justify = "center",  # centers the button's text
+                           wraplength=button_width-padding, # Makes the text wrap around the button
+                                                # the amount it starts to wrap is in pixles hence
+                                                # using the button_width
+                           bg = tabs[i][1],  # Sets the background color of the button
+                           font = FONT) # Sets the font of the button
+            
+        else: # Item button
+            if to_draw[i][1] == 0: # If outage is 0 (false)
+                outage = 'normal'
+            else: # Else outage will be 1 (true)
+                outage = 'disabled'
+                
+            b = tkinter.Button(tabs_frame,
+                           text = to_draw[i][0], # The text on the button is first part of the array
+                           command = lambda button_name = to_draw[i][0], x = i:
+                           button_pressed(button_name, -1, x), # When the button is pressed it calls a precedure
+                                                # button_pressed, and passes the name of the button
+                                                # the -1 shows it is an item and the number x is the position
+                                                # of the button in the passed tabs array
+                               
+                           justify = "center",  # centers the button's text
+                           wraplength=button_width-padding, # Makes the text wrap around the button
+                                                # the amount it starts to wrap is in pixles hence
+                                                # using the button_width
+                           bg = tabs[pos][1],  # Sets the background color of the button
+                           state = outage, # Sets the state of the button
+                           font = FONT) # Sets the font of the button
+
+        # Draw the button on the screen
+        b.place(x=current_width, y=current_height, width=button_width,
+                height=button_height)
+
+        # Calculates the new x and y positions for the button
+        current_height += button_height+padding # adds the button heigh to the current y pos
+
+        # If the next position is out of the bounds of the box, move to next column
+        if current_height+button_height > height_bound[1]:
+            current_height = height_bound[0]
+            current_width += button_width+padding
+
+    if pos != -1: # not a tabs being drawn
+        b = tkinter.Button(tabs_frame,
+                           text = 'Back to tabs\n↵', # The text on the button is first part of the array
+                           command = lambda button_name = 'back':
+                           button_pressed(button_name, -1, 'tab'), # When the button is pressed it calles a precedure
+                                                # button_pressed, and passes the name of the button
+                           justify = "center",  # centers the button's text
+                           wraplength=button_width-padding, # Makes the text wrap around the button
+                                                # the amount it starts to wrap is in pixles hence
+                                                # using the button_width
+                           font = FONT) # Sets the font of the button
+        
+        while current_width+button_width*2 < width_bound[1]:
+            current_width += button_width+padding
+            
+        while current_height+button_height*2 < height_bound[1]:
+            current_height += button_height+padding
+            
+        b.place(x=current_width, y=current_height, width=button_width,
+                height=button_height)
+
+# end draw_buttons
+        
+
+def button_pressed(inp, pos, item_pos):
+    global current_tab
+    if inp == "back": # back button
+        draw_buttons(tabs, -1) # Draw tabs
+        
+    elif pos > -1 and item_pos == -1: # tabs
+        draw_buttons(menu[inp], pos) # Draw relating items
+        current_tab = tabs[pos][0]        
+    else: # item
+        # Add item, price to array
+        # current_order.append((inp, menu[current_tab][item_pos][2]))
+        # Now changed to call procedure add_to_order
+        add_to_order(inp, menu[current_tab][item_pos][2], current_tab)
+
+# end button_pressed
